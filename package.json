@@ -1,0 +1,16 @@
+{
+  "name": "lab1-cache",
+  "version": "1.0.0",
+  "description": "cache",
+  "main": "lab1.js",
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "net": "^1.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "eliodor",
+  "license": "ISC"
+}
