@@ -3,15 +3,19 @@ var { fork } = require("child_process");
 var server = net.createServer();
 
 if (!process.argv[2]) {
-  console.log('No port specified')
+  console.log("No port specified");
   process.exit();
 }
 
 server.listen(process.argv[2], "127.0.0.1");
-console.log('Cache is running on port ' + process.argv[2]);
+console.log("Cache is running on port " + process.argv[2]);
 server.on("connection", handleConnection);
-
+server.on("error", (ex) => {
+  console.log(ex.toString());
+  process.exit();
+});
 var data = { cache: {}, ttl: {} };
+var dataTimeStamp = 0;
 var clients = [];
 
 //cache expiration verification
@@ -33,16 +37,27 @@ function handleConnection(conn) {
 
   function onConnData(d) {
     console.log(`connection data from ${remoteAddress}: ${d}`);
-    var authRes = processAuth(remoteAddress, d.toString());
-    if (authRes === "authorised") {
-      const childProcess = fork("./handler.js");
-      childProcess.send({ data, message: d.toString() });
-      childProcess.on("message", (response) => {
-        conn.write(response.message + "\n");
-        data = response.data;
-      });
+    if (d.toString() === "getData") {
+      conn.write(dataTimeStamp + ":" + JSON.stringify(data));
+    } else if (d.toString().startsWith("setData:")) {
+      try {
+        data = JSON.parse(d.toString().slice(8));
+        dataTimeStamp = new Date().getTime();
+      } catch {}
+      conn.write("any");
     } else {
-      conn.write(authRes + "\n");
+      var authRes = processAuth(remoteAddress, d.toString());
+      if (authRes === "authorised") {
+        const childProcess = fork("./handler.js");
+        childProcess.send({ data, message: d.toString() });
+        childProcess.on("message", (response) => {
+          conn.write(response.message + "\n");
+          data = response.data;
+          dataTimeStamp = new Date().getTime();
+        });
+      } else {
+        conn.write(authRes + "\n");
+      }
     }
   }
   function onConnClose() {
