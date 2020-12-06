@@ -2,12 +2,27 @@ var net = require("net");
 var { fork } = require("child_process");
 var server = net.createServer();
 
-server.listen(1337, "127.0.0.1");
-console.log('Cache is running...')
+if (!process.argv[2]) {
+  console.log('No port specified')
+  process.exit();
+}
+
+server.listen(process.argv[2], "127.0.0.1");
+console.log('Cache is running on port ' + process.argv[2]);
 server.on("connection", handleConnection);
 
 var data = { cache: {}, ttl: {} };
 var clients = [];
+
+//cache expiration verification
+setInterval(() => {
+  const childProcess = fork("./handler.js");
+  childProcess.send({ data, message: "REK" });
+  childProcess.on("message", (response) => {
+    data = response.data;
+  });
+}, 5000);
+
 function handleConnection(conn) {
   var remoteAddress = conn.remoteAddress + ":" + conn.remotePort;
   console.log("new client connection from %s", remoteAddress);
