@@ -62,6 +62,10 @@ function handle(message) {
       case "TTL":
         response = ttlFun(args[0]);
         break;
+      case "REK":
+        removeExpiredKeys();
+        response = "success";
+        break;
       default:
         response = `Unknown command: ${command}`;
         break;
@@ -171,7 +175,7 @@ function removeExpiredKeys() {
   var keys = Object.keys(ttl);
 
   keys.forEach((key) => {
-    if (new Date().getTime() / 1000 - seconds < 0) {
+    if (ttl[key] - new Date().getTime() / 1000 < 0) {
       delete cache[key];
       delete ttl[key];
     }
